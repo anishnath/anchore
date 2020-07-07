@@ -1,14 +1,25 @@
+stage('Configure') {
+    abort = false
+    inputConfig = input id: 'InputConfig', message: 'Docker registry and Anchore Engine configuration', parameters: [string(defaultValue: 'https://index.docker.io/v1/', description: 'URL of the docker registry for staging images before analysis', name: 'dockerRegistryUrl', trim: true), string(defaultValue: 'docker.io', description: 'Hostname of the docker registry', name: 'dockerRegistryHostname', trim: true), string(defaultValue: '', description: 'Name of the docker repository', name: 'dockerRepository', trim: true), credentials(credentialType: 'com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl', defaultValue: '', description: 'Credentials for connecting to the docker registry', name: 'dockerCredentials', required: true), string(defaultValue: '', description: 'Anchore Engine API endpoint', name: 'anchoreEngineUrl', trim: true), credentials(credentialType: 'com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl', defaultValue: '', description: 'Credentials for interacting with Anchore Engine', name: 'anchoreEngineCredentials', required: true)]
+
+    for (config in inputConfig) {
+        if (null == config.value || config.value.length() <= 0) {
+          echo "${config.key} cannot be left blank"
+          abort = true
+        }
+    }
+
+    if (abort) {
+        currentBuild.result = 'ABORTED'
+        error('Aborting build due to invalid input')
+    }
+}
+
 node {
   def app
   def dockerfile
   def anchorefile
   def repotag
-  
-  environment {
-    registry = "anishnath/anchore"
-    registryCredential = 'docker'
-    dockerImage =  ''
-   }
 
   try {
     stage('Checkout') {
@@ -22,8 +33,8 @@ node {
 
     stage('Build') {
       // Build the image and push it to a staging repository
-      repotag = registry + ":${BUILD_NUMBER}"
-      docker.withRegistry('', registryCredential) {
+      repotag = inputConfig['dockerRepository'] + ":${BUILD_NUMBER}"
+      docker.withRegistry(inputConfig['dockerRegistryUrl'], inputConfig['dockerCredentials']) {
         app = docker.build(repotag)
         app.push()
       }
@@ -37,7 +48,7 @@ node {
       },
       Analyze: {
         writeFile file: anchorefile, text: inputConfig['dockerRegistryHostname'] + "/" + repotag + " " + dockerfile
-        anchore name: anchorefile, annotations: [[key: 'added-by', value: 'jenkins']] , autoSubscribeTagUpdates: false, bailOnFail: false, engineRetries: '10000'
+        anchore name: anchorefile, engineurl: inputConfig['anchoreEngineUrl'], engineCredentialsId: inputConfig['anchoreEngineCredentials'], annotations: [[key: 'added-by', value: 'jenkins']]
       }
     }
 
