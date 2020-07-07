@@ -3,6 +3,12 @@ node {
   def dockerfile
   def anchorefile
   def repotag
+  
+  environment {
+    registry = "anishnath/anchore"
+    registryCredential = 'docker'
+    dockerImage =  ''
+   }
 
   try {
     stage('Checkout') {
@@ -17,7 +23,7 @@ node {
     stage('Build') {
       // Build the image and push it to a staging repository
       repotag = inputConfig['dockerRepository'] + ":${BUILD_NUMBER}"
-      docker.withRegistry(inputConfig['dockerRegistryUrl'], inputConfig['dockerCredentials']) {
+      docker.withRegistry('', registryCredential) {
         app = docker.build(repotag)
         app.push()
       }
@@ -31,7 +37,7 @@ node {
       },
       Analyze: {
         writeFile file: anchorefile, text: inputConfig['dockerRegistryHostname'] + "/" + repotag + " " + dockerfile
-        anchore name: anchorefile, engineurl: inputConfig['anchoreEngineUrl'], engineCredentialsId: inputConfig['anchoreEngineCredentials'], annotations: [[key: 'added-by', value: 'jenkins']]
+        anchore name: anchorefile, annotations: [[key: 'added-by', value: 'jenkins']] , autoSubscribeTagUpdates: false, bailOnFail: false, engineRetries: '10000'
       }
     }
 
