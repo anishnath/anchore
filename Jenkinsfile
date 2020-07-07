@@ -30,11 +30,6 @@ stage('Building image') {
 }
   
 stage('Parallel') {
-      parallel Test: {
-        app.inside {
-            sh 'echo "Dummy - tests passed"'
-        }
-      },
       Analyze: {
         writeFile file: anchorefile, text: 'docker.io/"anishnath/anchore:' + $BUILD_NUMBER + " " + dockerfile
         anchore annotations: [[key: 'from', value: 'Jenkins']], autoSubscribeTagUpdates: false, bailOnFail: false, engineRetries: '10000', name: 'anchore_images'
