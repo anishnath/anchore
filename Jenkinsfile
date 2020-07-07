@@ -1,6 +1,6 @@
 pipeline {
   environment {
-    registry = “anishnath/anchore”
+    registry = "anishnath/anchore”
     registryCredential = ‘docker'
     dockerImage =  ''
 }
@@ -14,13 +14,13 @@ stages {
 stage(‘Building image') {
   steps{
     script {
-      dockerImage = docker.build registry + “:$BUILD_NUMBER”
+      dockerImage = docker.build registry + ":$BUILD_NUMBER”
       }
     }
   }
 stage(‘Anchore Container Security Scan') {
   steps {
-    sh ‘echo “docker.io/“anishnath/anchore” `pwd`/Dockerfile” > anchore_images'
+    sh ‘echo "docker.io/"anishnath/anchore” `pwd`/Dockerfile” > anchore_images'
     anchore name: ‘anchore_images'
     }
   }
