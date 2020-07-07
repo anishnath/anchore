@@ -21,7 +21,7 @@ stage('Building image') {
 stage('Anchore Container Security Scan') {
   steps {
     //sh 'echo "docker.io/"anishnath/anchore" `pwd`/Dockerfile" > anchore_images'
-    sh 'echo "anishnath/anchore" + ":$BUILD_NUMBER" ${WORKSPACE}/Dockerfile > anchore_images'
+    sh 'echo "anishnath/anchore"":$BUILD_NUMBER" ${WORKSPACE}/Dockerfile > anchore_images'
     anchore name: 'anchore_images'
     }
   }
